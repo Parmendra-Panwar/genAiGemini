@@ -1,0 +1,5 @@
+# Ignore all node modules everywhere
+node_modules/
+
+# Ignore RN folder completely
+RN/
