@@ -3,43 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Mentor Bot</title>
-</head>
-<body>
-    
-</body>
-
-<script>
-    import { GoogleGenAI } from '@google/genai';
-
-    const client = new GoogleGenAI({});
-
-    const conversationHistory = [
-        {
-            role: 'user',
-            content: "What are the three largest cities in Spain?"
+    <title>AI Mentor Pro | Elite Guidance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --accent: #6366f1;
+            --glass: rgba(24, 24, 27, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
         }
-    ];
-
-    const interaction1 = await client.interactions.create({
-        model: 'gemini-3-flash-preview',
-        input: conversationHistory
-    });
-
-    console.log(`Model: ${interaction1.outputs[interaction1.outputs.length - 1].text}`);
-
-    conversationHistory.push({ role: 'model', content: interaction1.outputs });
-    conversationHistory.push({
-        role: 'user',
-        content: "What is the most famous landmark in the second one?"
-    });
-
-    const interaction2 = await client.interactions.create({
-        model: 'gemini-3-flash-preview',
-        input: conversationHistory
-    });
-
-    console.log(`Model: ${interaction2.outputs[interaction2.outputs.length - 1].text}`);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f4f4f5;
+            overflow: hidden;
+        }
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 5px;
+        }
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 10px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #71717a;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        /* Custom Dropdown Styling */
+        .mentor-dropdown {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+        .group:hover .mentor-dropdown {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+  }
+}
 </script>
+</head>
+<body class="h-screen flex items-center justify-center p-4 md:p-8">
 
+    <div class="max-w-5xl w-full h-full flex flex-col relative">
+        
+        <!-- Header Section -->
+        <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-600/20 rounded-xl text-indigo-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">AI Mentor Pro</h1>
+                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Strategic Intelligence</p>
+                </div>
+            </div>
+
+            <!-- Mentor Selector -->
+            <div class="relative group min-w-[260px]">
+                <div id="current-mentor-btn" class="flex items-center gap-3 glass p-2 rounded-2xl cursor-pointer hover:border-zinc-500 transition-all">
+                    <div id="mentor-avatar-preview" class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-yellow-600 flex items-center justify-center text-xl shadow-lg">🧘</div>
+                    <div class="flex-1">
+                        <p id="mentor-name-preview" class="text-sm font-bold">Zen Master Kaelan</p>
+                        <p id="mentor-role-preview" class="text-[10px] text-zinc-400 uppercase font-medium">Spiritual Guide</p>
+                    </div>
+                    <svg class="text-zinc-500 mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                
+                <div class="mentor-dropdown absolute top-full left-0 right-0 mt-2 glass rounded-2xl p-1.5 z-50 shadow-2xl border border-white/10">
+                    <div id="mentor-list">
+                        <!-- Mentors injected here via JS -->
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <main class="flex-1 glass rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+            <div id="chat-messages" class="chat-container flex-1 overflow-y-auto p-6 md:p-10 space-y-6 scroll-smooth">
+                <!-- Welcome UI -->
+                <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+                    <div id="big-avatar" class="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-500 to-yellow-600 flex items-center justify-center text-5xl mb-6 shadow-2xl">🧘</div>
+                    <h2 id="welcome-name" class="text-3xl font-bold mb-3">Master Kaelan</h2>
+                    <p id="welcome-desc" class="text-zinc-400 text-sm leading-relaxed mb-8">
+                        Finding inner peace in a chaotic world. How can I guide your spirit today?
+                    </p>
+                    <div class="grid grid-cols-1 gap-3 w-full">
+                        <button onclick="prefillInput('How can I find peace in stress?')" class="p-4 bg-zinc-800/40 hover:bg-zinc-800 border border-white/5 rounded-2xl text-sm transition-all text-zinc-300 hover:text-white text-left px-6">
+                            "How can I find peace in stress?"
+                        </button>
+                        <button onclick="prefillInput('Teach me a mindfulness technique.')" class="p-4 bg-zinc-800/40 hover:bg-zinc-800 border border-white/5 rounded-2xl text-sm transition-all text-zinc-300 hover:text-white text-left px-6">
+                            "Teach me a mindfulness technique."
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator (Hidden by default) -->
+            <div id="loading-indicator" class="hidden px-10 pb-4">
+                <div class="flex gap-4 items-center animate-fade-in">
+                    <div id="loading-avatar" class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-sm border border-white/10">🧘</div>
+                    <div class="flex gap-1.5 p-4 bg-zinc-800/50 rounded-2xl rounded-tl-none border border-white/5">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-5 md:p-8 border-t border-white/5 bg-zinc-900/30">
+                <form id="chat-form" class="relative max-w-4xl mx-auto flex gap-4">
+                    <button type="button" onclick="clearConversation()" class="flex-shrink-0 p-4 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl transition-all shadow-lg" title="Reset Session">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                    </button>
+                    
+                    <div class="relative flex-1 group">
+                        <input
+                            id="user-input"
+                            type="text"
+                            autocomplete="off"
+                            placeholder="Ask for guidance..."
+                            class="w-full bg-zinc-800/60 border border-white/10 rounded-[1.25rem] py-4 px-6 pr-14 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm shadow-inner placeholder:text-zinc-600"
+                        />
+                        <button
+                            id="send-btn"
+                            type="submit"
+                            class="absolute right-2.5 top-2.5 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+
+                    <button type="button" onclick="toggleCurlModal()" class="flex-shrink-0 p-4 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl transition-all shadow-lg" title="View Source">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- cURL Modal -->
+        <div id="curl-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden items-center justify-center p-6 transition-all duration-300">
+            <div class="glass max-w-2xl w-full rounded-[2rem] overflow-hidden shadow-2xl border border-white/20">
+                <div class="p-8 border-b border-white/10 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+                        </div>
+                        <h3 class="font-bold text-xl">Raw REST Payload</h3>
+                    </div>
+                    <button onclick="toggleCurlModal()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="p-8 overflow-y-auto max-h-[60vh]">
+                    <p class="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-widest">Active Shell Request (cURL)</p>
+                    <pre id="curl-code" class="p-6 bg-black/80 rounded-2xl text-[13px] font-mono text-emerald-400 overflow-x-auto border border-white/5 whitespace-pre-wrap leading-relaxed shadow-inner">
+                        <!-- Loaded via JS -->
+                    </pre>
+                </div>
+                <div class="p-8 border-t border-white/10 flex justify-end">
+                    <button onclick="toggleCurlModal()" class="px-8 py-3 bg-zinc-100 text-zinc-900 rounded-xl font-bold hover:bg-white transition-all transform active:scale-95 shadow-xl">Got it</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * CONFIGURATION & CONSTANTS
+         */
+        const API_KEY = ""; // Injected automatically from process.env.API_KEY
+        const MODEL = 'gemini-3-flash-preview';
+        const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+
+        const MENTORS = {
+            MONK: {
+                id: 'MONK',
+                name: "Zen Master Kaelan",
+                role: "Spiritual Guide",
+                description: "Finding inner peace in a chaotic world.",
+                avatar: "🧘",
+                color: "from-orange-500 to-yellow-600",
+                systemInstruction: "You are Kaelan, a wise Zen Monk. Speak with tranquility. Use metaphors of water and mountains. Focus on peace and mindfulness."
+            },
+            BUSINESSMAN: {
+                id: 'BUSINESSMAN',
+                name: "Marcus Vane",
+                role: "Wealth Strategist",
+                description: "Hard truths about money, time, and scale.",
+                avatar: "💼",
+                color: "from-blue-600 to-indigo-700",
+                systemInstruction: "You are Marcus Vane, a tycoon. Be direct, execution-focused, and aggressive. Talk about leverage, ROI, and time-optimization."
+            },
+            ACHIEVER: {
+                id: 'ACHIEVER',
+                name: "Aryan 'AIR 4'",
+                role: "Elite Mindset Coach",
+                description: "Self-made success and academic excellence.",
+                avatar: "🏆",
+                color: "from-emerald-500 to-teal-600",
+                systemInstruction: "You are Aryan, an AIR 4 ranker. Focus on consistency, the grind, and peak performance habits. Be motivating and relatable."
+            },
+            SCIENTIST: {
+                id: 'SCIENTIST',
+                name: "Dr. Elara Thorne",
+                role: "Systems Engineer",
+                description: "Logical analysis and first-principles thinking.",
+                avatar: "🔬",
+                color: "from-purple-600 to-pink-700",
+                systemInstruction: "You are Dr. Thorne. Be objective and analytical. Break problems into atomic parts using first principles logic. Avoid fluff."
+            }
+        };
+
+        /**
+         * STATE MANAGEMENT
+         */
+        let currentState = {
+            selectedMentor: MENTORS.MONK,
+            history: [],
+            isLoading: false
+        };
+
+        /**
+         * DOM ELEMENTS
+         */
+        const elements = {
+            chatForm: document.getElementById('chat-form'),
+            userInput: document.getElementById('user-input'),
+            chatMessages: document.getElementById('chat-messages'),
+            loadingIndicator: document.getElementById('loading-indicator'),
+            sendBtn: document.getElementById('send-btn'),
+            mentorList: document.getElementById('mentor-list'),
+            mentorAvatarPreview: document.getElementById('mentor-avatar-preview'),
+            mentorNamePreview: document.getElementById('mentor-name-preview'),
+            mentorRolePreview: document.getElementById('mentor-role-preview'),
+            welcomeScreen: document.getElementById('welcome-screen'),
+            welcomeName: document.getElementById('welcome-name'),
+            welcomeDesc: document.getElementById('welcome-desc'),
+            bigAvatar: document.getElementById('big-avatar'),
+            curlModal: document.getElementById('curl-modal'),
+            curlCode: document.getElementById('curl-code'),
+            loadingAvatar: document.getElementById('loading-avatar')
+        };
+
+        /**
+         * CORE LOGIC
+         */
+        function init() {
+            renderMentorList();
+            updateMentorUI();
+            
+            elements.chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleMessage();
+            });
+        }
+
+        function renderMentorList() {
+            elements.mentorList.innerHTML = Object.values(MENTORS).map(m => `
+                <button onclick="selectMentor('${m.id}')" class="w-full flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-white/10 ${currentState.selectedMentor.id === m.id ? 'bg-white/10' : ''}">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center text-sm shadow-md">${m.avatar}</div>
+                    <div class="text-left">
+                        <p class="text-sm font-bold text-zinc-100">${m.name}</p>
+                        <p class="text-[10px] text-zinc-500 uppercase font-bold">${m.role}</p>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function selectMentor(id) {
+            currentState.selectedMentor = MENTORS[id];
+            clearConversation();
+            updateMentorUI();
+            renderMentorList();
+        }
+
+        function updateMentorUI() {
+            const m = currentState.selectedMentor;
+            elements.mentorAvatarPreview.className = `w-10 h-10 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center text-xl shadow-lg`;
+            elements.mentorAvatarPreview.textContent = m.avatar;
+            elements.mentorNamePreview.textContent = m.name;
+            elements.mentorRolePreview.textContent = m.role;
+            
+            elements.welcomeName.textContent = m.name;
+            elements.welcomeDesc.textContent = m.description;
+            elements.bigAvatar.className = `w-24 h-24 rounded-3xl bg-gradient-to-br ${m.color} flex items-center justify-center text-5xl mb-6 shadow-2xl`;
+            elements.bigAvatar.textContent = m.avatar;
+            elements.loadingAvatar.textContent = m.avatar;
+            elements.userInput.placeholder = `Message ${m.name}...`;
+        }
+
+        function prefillInput(text) {
+            elements.userInput.value = text;
+            elements.userInput.focus();
+        }
+
+        async function handleMessage() {
+            const text = elements.userInput.value.trim();
+            if (!text || currentState.isLoading) return;
+
+            // User UI Update
+            appendMessage('user', text);
+            elements.userInput.value = '';
+            
+            // State Update
+            currentState.history.push({ role: 'user', parts: [{ text }] });
+            setLoading(true);
+
+            try {
+                const responseText = await callGeminiAPI();
+                appendMessage('model', responseText);
+                currentState.history.push({ role: 'model', parts: [{ text: responseText }] });
+            } catch (err) {
+                appendMessage('model', `⚠️ Error: ${err.message}. Check your API Key or Network.`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function callGeminiAPI() {
+            const payload = {
+                contents: currentState.history,
+                systemInstruction: { parts: [{ text: currentState.selectedMentor.systemInstruction }] },
+                generationConfig: {
+                    temperature: 0.8,
+                    topP: 0.95,
+                    maxOutputTokens: 1024
+                }
+            };
+
+            const response = await fetch(`${ENDPOINT}?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || "Failed to fetch response");
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function appendMessage(role, text) {
+            elements.welcomeScreen.style.display = 'none';
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in mb-6`;
+            
+            const isModel = role === 'model';
+            const m = currentState.selectedMentor;
+
+            msgDiv.innerHTML = `
+                <div class="max-w-[85%] md:max-w-[75%] flex gap-4 ${role === 'user' ? 'flex-row-reverse' : ''}">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-lg ${isModel ? 'bg-zinc-800 border border-white/10' : 'bg-indigo-600'}">
+                        ${isModel ? m.avatar : '👤'}
+                    </div>
+                    <div class="p-5 rounded-3xl leading-relaxed text-sm shadow-xl ${
+                        isModel 
+                        ? 'bg-zinc-800/80 text-zinc-100 rounded-tl-none border border-white/5' 
+                        : 'bg-indigo-600 text-white rounded-tr-none'
+                    }">
+                        ${text.replace(/\n/g, '<br/>')}
+                    </div>
+                </div>
+            `;
+            elements.chatMessages.appendChild(msgDiv);
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        function setLoading(loading) {
+            currentState.isLoading = loading;
+            elements.loadingIndicator.classList.toggle('hidden', !loading);
+            elements.sendBtn.disabled = loading;
+            if (loading) {
+                elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            }
+        }
+
+        function clearConversation() {
+            currentState.history = [];
+            elements.chatMessages.innerHTML = '';
+            elements.chatMessages.appendChild(elements.welcomeScreen);
+            elements.welcomeScreen.style.display = 'flex';
+            elements.userInput.value = '';
+            setLoading(false);
+        }
+
+        function toggleCurlModal() {
+            const isHidden = elements.curlModal.classList.contains('hidden');
+            if (isHidden) {
+                const curl = `curl "${ENDPOINT}?key=YOUR_API_KEY" \\
+-H "Content-Type: application/json" \\
+-X POST \\
+-d '{
+  "contents": ${JSON.stringify(currentState.history, null, 2)},
+  "systemInstruction": {
+    "parts": [{ "text": "${currentState.selectedMentor.systemInstruction.replace(/"/g, '\\"')}" }]
+  },
+  "generationConfig": {
+    "temperature": 0.8,
+    "maxOutputTokens": 1024
+  }
+}'`;
+                elements.curlCode.textContent = curl;
+                elements.curlModal.classList.remove('hidden');
+                elements.curlModal.classList.add('flex');
+            } else {
+                elements.curlModal.classList.add('hidden');
+                elements.curlModal.classList.remove('flex');
+            }
+        }
+
+        init();
+    </script>
+</body>
 </html>
