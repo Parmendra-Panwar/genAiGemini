@@ -27,7 +27,7 @@ const activateAgent = async (userText) => {
 
     while (true) {
         const result = await ai.models.generateContent({
-            model: "gemini-2.5-flash", 
+            model: "gemini-3-flash", 
             contents: History,
             config: {
                 systemInstruction: "You are an agent with a sum tool. Use it if numbers need addition.",
@@ -63,7 +63,6 @@ const activateAgent = async (userText) => {
 }
 
 const main = async () => {
-    // Fixed: Use a while loop instead of recursion
     while (true) {
         const userText = readlineSync.question("\nAsk me anything (or type 'exit') --> ");
         if (userText.toLowerCase() === 'exit') break;
