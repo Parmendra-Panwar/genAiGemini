@@ -10,7 +10,6 @@ const asyncExecute = promisify(exec);
 
 // Safety delay function
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
-
 const ai = new GoogleGenAI({ apiKey: "" || process.env.GEMINI_API_KEY }); 
 const History = []; 
 
@@ -39,17 +38,13 @@ const executeCommondDeclarations = {
     }
 };
 
-const availableTools = {
-   executeCommand
-}
+const availableTools = { executeCommand }
 
 const activateAgent = async (userText) => {
     History.push({ role: "user", parts:[{text: userText}]});
     
     while(true){
-        // --- Delay added here to avoid 429 Error ---
-        console.log("(Waiting for rate limit safety...)");
-        await sleep(2000); 
+        await sleep(1000); 
 
         const result = await ai.models.generateContent({
             model: "gemini-2.5-flash-lite", 
@@ -81,38 +76,26 @@ const activateAgent = async (userText) => {
         });
 
         if(result.functionCalls && result.functionCalls.length > 0){
+            console.log(result.functionCalls[0]);
             const call = result.functionCalls[0];
             const toolRes = await availableTools[call.name](call.args);
 
             const funResHist = {
                 name: call.name,
-                response: {
-                    result: toolRes
-                }
+                response: { result: toolRes }
             }
 
-            History.push({
-                role: "model",
-                parts: [{ functionCall: call }]
-            })
-            History.push({
-                role: "user",
-                parts: [{ functionResponse: funResHist }]
-            })
+            History.push({ role: "model", parts: [{ functionCall: call }] });
+            History.push({ role: "user", parts: [{ functionResponse: funResHist }] });
         }else{
-            History.push({
-                role: "model",
-                parts: [{ text: result.text }]
-            })
+            History.push({ role: "model", parts: [{ text: result.text }] });
             console.log(result.text);
             break;
         }
     }
 }
-
 const main = async () => {
     const userText = readlineSync.question(`\n Chat with your code writer: `);
     await activateAgent(userText)
 }
-
 main();
